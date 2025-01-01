@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -121,12 +122,14 @@ func writeBlock(w http.ResponseWriter, r *http.Request) {
 		spew.Dump(blockchain)
 	}
 
+	responseJson(w, r, http.StatusOK, newBlock)
+
 }
 
 func responseJson(w http.ResponseWriter, r *http.Request, statusCode int, payload interface{}) {
 	w.Header().Set("Content-type", "application/json")
 
-	res, err := json.Marshal(blockchain)
+	res, err := json.MarshalIndent(payload, "", "")
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -140,8 +143,21 @@ func responseJson(w http.ResponseWriter, r *http.Request, statusCode int, payloa
 	w.Write(res)
 }
 
-func validBlock() bool {
+func validBlock(newBlock, oldBlock Block) bool {
 
+	if oldBlock.Index+1 != newBlock.Index {
+		return false
+	}
+
+	if oldBlock.Hash != newBlock.PrevHash {
+		return false
+	}
+
+	if createHash(newBlock) != newBlock.Hash {
+		return false
+	}
+
+	return true
 }
 
 func createHash() string {
@@ -149,7 +165,31 @@ func createHash() string {
 }
 
 func generateBlock(oldBlock Block, Data int) Block {
+	var newBlock Block
 
+	t := time.Now()
+
+	newBlock.Index = oldBlock.Index + 1
+	newBlock.Timestamp = t.String()
+	newBlock.Data = Data
+	newBlock.PrevHash = oldBlock.Hash
+	newBlock.Difficulty = dificulty
+
+	for i := 0; ; i++ {
+		newhex := fmt.SPrintf("%x", i)
+		newBlock.Nonce == newhex
+
+		if !validHash(createHash(newBlock), newBlock.Difficulty) {
+			fmt.Println(createHash(newBlock), "do more work....")
+			time.Sleep(time.Second)
+			continue
+		} else {
+			fmt.Println(createHash(newBlock), "Work Done")
+			newBlock.Hash = createHash(newBlock)
+			break
+		}
+	}
+	return newBlock
 }
 
 func validHash() bool {
