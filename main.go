@@ -1,11 +1,15 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -160,8 +164,13 @@ func validBlock(newBlock, oldBlock Block) bool {
 	return true
 }
 
-func createHash() string {
+func createHash(block Block) string {
+	record := strconv.Itoa(block.Index) + (block.Timestamp) + strconv.Itoa(block.Data) + (block.PrevHash) + (block.Nonce)
 
+	hash := sha256.New()
+	hash.Write([]byte(record))
+	hashed := hash.Sum(nil)
+	return hex.EncodeToString(hashed)
 }
 
 func generateBlock(oldBlock Block, Data int) Block {
@@ -176,8 +185,9 @@ func generateBlock(oldBlock Block, Data int) Block {
 	newBlock.Difficulty = dificulty
 
 	for i := 0; ; i++ {
-		newhex := fmt.SPrintf("%x", i)
-		newBlock.Nonce == newhex
+		newhex := fmt.Sprintf("%x", i)
+
+		newBlock.Nonce = newhex
 
 		if !validHash(createHash(newBlock), newBlock.Difficulty) {
 			fmt.Println(createHash(newBlock), "do more work....")
@@ -192,6 +202,7 @@ func generateBlock(oldBlock Block, Data int) Block {
 	return newBlock
 }
 
-func validHash() bool {
-
+func validHash(hash string, difficulty int) bool {
+	prefix := strings.Repeat("0", difficulty)
+	return strings.HasPrefix(hash, prefix)
 }
