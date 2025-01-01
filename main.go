@@ -27,6 +27,10 @@ type Block struct {
 	Nonce      string
 }
 
+type Message struct {
+	Data int
+}
+
 var blockchain []Block
 
 func main() {
@@ -49,7 +53,7 @@ func main() {
 }
 
 func run() error {
-	router := mux.NewRouter()
+	muxRouter := router()
 
 	port := os.Getenv("PORT")
 
@@ -57,7 +61,7 @@ func run() error {
 
 	s := &http.Server{
 		Addr:           ":" + port,
-		Handler:        router,
+		Handler:        muxRouter,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
@@ -94,12 +98,46 @@ func getBlocks(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes)
 }
 
-func writeBlock() {
+func writeBlock(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-type", "applcation/json")
+
+	var m Message
+
+	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+		responseJson(w, r, http.StatusBadRequest, r.Body)
+		return
+	}
+	defer r.Body.Close()
+
+	mutex.Lock()
+
+	newBlock := generateBlock(blockchain[len(blockchain)-1], m.Data)
+
+	mutex.Unlock()
+
+	if validBlock(newBlock, blockchain[len(blockchain)-1]) {
+		blockchain = append(blockchain, newBlock)
+		spew.Dump(blockchain)
+	}
 
 }
 
-func responseJson() {
+func responseJson(w http.ResponseWriter, r *http.Request, statusCode int, payload interface{}) {
+	w.Header().Set("Content-type", "application/json")
 
+	res, err := json.Marshal(blockchain)
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Printf("Error encoding response: %v", err)
+
+		w.Write([]byte("Internal server error"))
+		return
+	}
+
+	w.WriteHeader(statusCode)
+	w.Write(res)
 }
 
 func validBlock() bool {
@@ -110,7 +148,7 @@ func createHash() string {
 
 }
 
-func generateBlock() {
+func generateBlock(oldBlock Block, Data int) Block {
 
 }
 
