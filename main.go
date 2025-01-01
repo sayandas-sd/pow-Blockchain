@@ -45,8 +45,8 @@ func main() {
 
 	go func() {
 		t := time.Now()
-		genesisBlock := &Block{}
-		genesisBlock = &Block{0, t.String(), 0, "", createHash(genesisBlock), dificulty, ""}
+		genesisBlock := Block{}
+		genesisBlock = Block{0, t.String(), 0, "", createHash(genesisBlock), dificulty, ""}
 		spew.Dump(genesisBlock)
 
 		mutex.Lock()
