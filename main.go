@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -51,7 +52,9 @@ func run() error {
 	router := mux.NewRouter()
 
 	port := os.Getenv("PORT")
+
 	log.Println("server is running on port:", port)
+
 	s := &http.Server{
 		Addr:           ":" + port,
 		Handler:        router,
@@ -68,12 +71,27 @@ func run() error {
 }
 
 func router() http.Handler {
-	HandleFunc("/", getBlocks).Methods("GET")
-	Handlefunc("/", writeBlock).Methos("POST")
+
+	r := mux.NewRouter()
+
+	r.HandleFunc("/", getBlocks).Methods("GET")
+	r.HandleFunc("/", writeBlock).Methods("POST")
+
+	return r
 }
 
-func getBlocks() {
+func getBlocks(w http.ResponseWriter, r *http.Request) {
+	bytes, err := json.MarshalIndent(blockchain, "", "")
 
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(bytes)
 }
 
 func writeBlock() {
